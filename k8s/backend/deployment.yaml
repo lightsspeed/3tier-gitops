@@ -7,9 +7,6 @@ metadata:
     app: backend
     tier: application
     version: v1
-  annotations:
-    # ArgoCD will track health via this deployment's readiness
-    argocd.argoproj.io/hook: ""
 spec:
   replicas: 2
   selector:
@@ -34,7 +31,7 @@ spec:
           #    ImagePullBackOff → ArgoCD detects Degraded → rollback
           # ─────────────────────────────────────────────────────────────────
           image: three-tier-backend:v1
-          imagePullPolicy: Never   # Use locally built minikube image
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3000
           env:

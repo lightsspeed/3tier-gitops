@@ -27,7 +27,7 @@ spec:
       containers:
         - name: frontend
           image: three-tier-frontend:v1
-          imagePullPolicy: Never   # Use locally built minikube image
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 80
           resources:
