@@ -16,7 +16,9 @@ spec:
   source:
     repoURL: https://github.com/lightsspeed/3tier-gitops.git
     targetRevision: HEAD
-    path: k8s   # ArgoCD will recurse into all subdirectories
+    path: k8s
+    directory:
+      recurse: true   # ArgoCD will recurse into all subdirectories
 
   # ── Destination: local K8s cluster ───────────────────────────────────────
   destination:
