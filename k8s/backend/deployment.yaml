@@ -1,0 +1,82 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: three-tier
+  labels:
+    app: backend
+    tier: application
+    version: v1
+  annotations:
+    # ArgoCD will track health via this deployment's readiness
+    argocd.argoproj.io/hook: ""
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: backend
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        app: backend
+        tier: application
+        version: v1
+    spec:
+      containers:
+        - name: backend
+          # ─────────────────────────────────────────────────────────────────
+          # 🔄 ROLLBACK TEST: Change this tag to "v2-broken" to trigger
+          #    ImagePullBackOff → ArgoCD detects Degraded → rollback
+          # ─────────────────────────────────────────────────────────────────
+          image: three-tier-backend:v1
+          imagePullPolicy: Never   # Use locally built minikube image
+          ports:
+            - containerPort: 3000
+          env:
+            - name: APP_VERSION
+              value: "v1"
+            - name: DB_HOST
+              value: postgres-service
+            - name: DB_PORT
+              value: "5432"
+            - name: DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: POSTGRES_DB
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: POSTGRES_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: POSTGRES_PASSWORD
+          resources:
+            requests:
+              cpu:    100m
+              memory: 128Mi
+            limits:
+              cpu:    500m
+              memory: 256Mi
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 15
+            periodSeconds: 5
+            failureThreshold: 3

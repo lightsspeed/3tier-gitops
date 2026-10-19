@@ -1,0 +1,45 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: three-tier-app
+  namespace: argocd
+  labels:
+    environment: demo
+    team: platform
+  # Cascade delete — remove this in production!
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+
+  # ── Source: your GitOps repo ──────────────────────────────────────────────
+  source:
+    repoURL: https://github.com/lightsspeed/3tier-gitops.git
+    targetRevision: HEAD
+    path: k8s   # ArgoCD will recurse into all subdirectories
+
+  # ── Destination: local K8s cluster ───────────────────────────────────────
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: three-tier
+
+  # ── Sync Policy ──────────────────────────────────────────────────────────
+  syncPolicy:
+    automated:
+      prune: true        # Remove resources deleted from Git
+      selfHeal: true     # Revert manual changes made outside Git (key for rollback demo!)
+    syncOptions:
+      - CreateNamespace=true
+      - ApplyOutOfSyncOnly=true
+      - ServerSideApply=true
+
+  # ── Health checks ─────────────────────────────────────────────────────────
+  # ArgoCD uses built-in health checks for Deployments (watches readyReplicas)
+  # ImagePullBackOff will cause deployment health = Degraded
+
+  # ── Ignore differences (optional, remove if not needed) ──────────────────
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas   # Ignore if HPA changes replica count
